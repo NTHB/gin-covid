@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
+
+	"github.com/gin-gonic/gin"
 )
 
 type CovidCaseNode struct {
@@ -26,6 +29,17 @@ type CovidData struct {
 	StatQuarantine int    `json:"StatQuarantine"`
 }
 
+type AgeGroup struct {
+	GroupName1 int `json:"0-30"`
+	GroupName2 int `json:"31-60"`
+	GroupName3 int `json:"60+"`
+	GroupName4 int `json:"N/A"`
+}
+type Report struct {
+	Province map[string]int `json:"Province"`
+	AgeGroup AgeGroup       `json:"AgeGroup"`
+}
+
 func main() {
 	jsonFile, err := os.Open("covid-cases.json")
 
@@ -39,16 +53,8 @@ func main() {
 	var data CovidCaseNode
 
 	json.Unmarshal(byteValue, &data)
-	// fmt.Printf("data type = %T\n", data)
-	// fmt.Println("data length = ", len(data.CovidCaseNode))
-	// fmt.Printf("data.CovidCaseNode type = %T\n", data.CovidCaseNode)
 
 	ProvinceMap := make(map[string]int)
-
-	// GroupName1 := "0-30"
-	// GroupName2 := "31-60"
-	// GroupName3 := "61+"
-	// GroupName4 := "N/A"
 
 	var (
 		Group1Count int
@@ -85,16 +91,25 @@ func main() {
 	delete(ProvinceMap, "")
 	fmt.Println(ProvinceMap)
 
-	// r := gin.New()
+	var Report Report
+	Report.Province = ProvinceMap
+	Report.AgeGroup.GroupName1 = Group1Count
+	Report.AgeGroup.GroupName2 = Group2Count
+	Report.AgeGroup.GroupName3 = Group3Count
+	Report.AgeGroup.GroupName4 = Group4Count
 
-	// r.GET("/", func(c *gin.Context) {
-	// 	c.JSON(http.StatusOK, gin.H{
-	// 		"message": "Hello world of GIN",
-	// 	})
-	// })
+	fmt.Println(Report)
 
-	// r.GET("/books", func(c *gin.Context) {
-	// 	c.JSON(http.StatusOK, books)
-	// })
-	// r.Run()
+	r := gin.New()
+
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Welcome to covid summary project!",
+		})
+	})
+
+	r.GET("/covid/summary", func(c *gin.Context) {
+		c.JSON(http.StatusOK, Report)
+	})
+	r.Run()
 }
